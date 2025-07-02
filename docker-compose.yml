@@ -8,6 +8,7 @@ services:
     volumes:
       - ../..:/workspaces:cached
     command: sleep infinity
+    #network_mode: service:db
 
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -20,6 +21,9 @@ services:
       PGADMIN_CONFIG_SESSION_TIMEOUT: 86400
       PGADMIN_CONFIG_WTF_CSRF_ENABLED: 'False'
       PGADMIN_CONFIG_WTF_CSRF_HEADERS: '["Referer", "Origin"]'
+      # PGADMIN_LISTEN_PORT: 5050
+      # PGADMIN_CONFIG_PROXY_X_HOST_COUNT: 1
+      # PGADMIN_CONFIG_PROXY_X_PREFIX_COUNT: 1
     ports:
       - 5050:80
     depends_on:
