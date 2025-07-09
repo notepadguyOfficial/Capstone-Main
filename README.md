@@ -32,7 +32,7 @@ Hydro App is a mobile platform designed to streamline sales, orders, delivery, a
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/notepadguyOfficial/Capstone-Main.git Capstone
+   git clone https://github.com/notepadguyOfficial/Capstone.git
    cd Capstone
    ```
 

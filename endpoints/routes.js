@@ -11,7 +11,6 @@ const { type_enum, GenerateToken } = require('../utils/lib');
 const bcrypt = require('bcrypt');
 const axios = require('axios');
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
-const WEBSITE_URL = process.env.WEBSITE_URL;
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -69,11 +68,6 @@ const upload = multer({ storage: multer.memoryStorage() });
  * @returns {Promise<void>} Sends a JSON response indicating the registration status of the water refilling station.
  */
 router.post('/register-wrs', async (req, res) => {
-  Logs.http(`Received ${req.method} request to ${req.url}`);
-  Logs.http(`Request Body: ${JSON.stringify(req.body)}`);
-  Logs.http(`Request Headers: ${JSON.stringify(req.headers)}`);
-  Logs.http(`Incoming Remote Address: ${req.headers['x-forwarded-for'] || req.ip || req.socket.remoteAddress}`);
-
   const { name, address, phone_num, lng, lat, station_paymaya_acc, station_gcash_qr, station_paymaya_qr } = req.body;
 
   const config = {
@@ -115,11 +109,6 @@ router.post('/register-wrs', async (req, res) => {
 });
 
 router.get('/admin/getdatacount', async (req, res) => {
-  Logs.http(`Received ${req.method} request to ${req.url}`);
-  Logs.http(`Request Query: ${JSON.stringify(req.query)}`);
-  Logs.http(`Request Headers: ${JSON.stringify(req.headers)}`);
-  Logs.http(`Incoming Remote Address: ${req.headers['x-forwarded-for'] || req.ip || req.socket.remoteAddress}`);
-
   const authorization = req.headers.authorization;
 
   const token = authorization?.split(' ')[1];
@@ -163,6 +152,34 @@ router.get('/admin/getdatacount', async (req, res) => {
   }
 });
 
+router.get('/customer/get/list/wrs' , async (req, res) => {
+  try {
+    const result = await db('water_refilling_station')
+      .select('*');
+
+    if (!result) {
+      Logs.error(`Empty Water Refilling Stations! | status: 200`);
+      return res.status(200).json({ message: "Empty Water Refilling Stations!" });
+    }
+
+    const json_map = result.map(station => ({
+      station_id: station.station_id,
+      station_name: station.station_name,
+      station_address: station.station_address,
+      station_phone_num: station.station_phone_num,
+      station_longitude: station.station_longitude,
+      station_latitude: station.station_latitude
+    }));
+
+    res.status(200).json({ message: "Successfully retrieved Water Refilling Station!", data: json_map });
+    Logs.http(`Response being sent: Successfully retrieved Water Refilling Station!`);
+  }
+  catch (error) {
+    res.status(500).json({ error: error.message });
+    Logs.error(`Response being sent: ${error.message}`);
+  }
+});
+
 /**
  * GET /get-wrs
  *
@@ -176,11 +193,6 @@ router.get('/admin/getdatacount', async (req, res) => {
  * @returns {Promise<void>} Sends a JSON response with the retrieved water refilling stations or an error message.
  */
 router.get('/get-wrs', async (req, res) => {
-  Logs.http(`Received ${req.method} request to ${req.url}`);
-  Logs.http(`Request Body: ${JSON.stringify(req.body)}`);
-  Logs.http(`Request Headers: ${JSON.stringify(req.headers)}`);
-  Logs.http(`Incoming Remote Address: ${req.headers['x-forwarded-for'] || req.ip || req.socket.remoteAddress}`);
-
   try {
     const { result } = await db('water_refilling_station')
       .select('*');
@@ -230,11 +242,6 @@ router.get('/get-wrs', async (req, res) => {
  * @returns {Promise<void>} Sends a JSON response with the retrieved water refilling station details or an error message.
  */
 router.get('/get-wrs-datails', async (req, res) => {
-  Logs.http(`Received ${req.method} request to ${req.url}`);
-  Logs.http(`Request Body: ${JSON.stringify(req.body)}`);
-  Logs.http(`Request Headers: ${JSON.stringify(req.headers)}`);
-  Logs.http(`Incoming Remote Address: ${req.headers['x-forwarded-for'] || req.ip || req.socket.remoteAddress}`);
-
   const { station_id } = req.body;
 
   if (!station_id) {
@@ -301,11 +308,6 @@ router.get('/get-wrs-datails', async (req, res) => {
  * @returns {Promise<void>} Sends a JSON response indicating the update status of the water refilling station.
  */
 router.get('/update-wrs-details', async (req, res) => {
-  Logs.http(`Received ${req.method} request to ${req.url}`);
-  Logs.http(`Request Body: ${JSON.stringify(req.body)}`);
-  Logs.http(`Request Headers: ${JSON.stringify(req.headers)}`);
-  Logs.http(`Incoming Remote Address: ${req.headers['x-forwarded-for'] || req.ip || req.socket.remoteAddress}`);
-
   const { station_id, station_name, station_address, station_phone_num, station_longitude, station_latitude, station_paymaya_acc, station_gcash_qr, station_paymaya_qr } = req.body;
 
   if (!station_id) {
@@ -383,11 +385,6 @@ router.get('/update-wrs-details', async (req, res) => {
  * @throws {Error} Will throw an error if the registration process fails.
  */
 router.post('/register', async (req, res) => {
-  Logs.http(`Received ${req.method} request to ${req.url}`);
-  Logs.http(`Request Body: ${JSON.stringify(req.body)}`);
-  Logs.http(`Request Headers: ${JSON.stringify(req.headers)}`);
-  Logs.http(`Incoming Remote Address: ${req.headers['x-forwarded-for'] || req.ip || req.socket.remoteAddress}`);
-
   const { fname, lname, staff_type, phone, gender, username, password, birth, type } = req.body;
 
   if (!type_enum.includes(type)) {
@@ -495,7 +492,7 @@ router.post('/register', async (req, res) => {
     let profile = null;
 
     if (fs.existsSync(IMAGE_PATH)) {
-      profile = `${WEBSITE_URL}/user/profile/image?id=${user[config.field]}&type=${type}`;
+      profile = `https://hydrohub.ddns.net/user/profile/image?id=${user[config.field]}&type=${type}`;
     }
 
     const userData = {
@@ -520,11 +517,6 @@ router.post('/register', async (req, res) => {
 });
 
 router.get('/user/profile/image', async (req, res) => {
-  Logs.http(`Received ${req.method} request to ${req.url}`);
-  Logs.http(`Request Query: ${JSON.stringify(req.query)}`);
-  Logs.http(`Request Headers: ${JSON.stringify(req.headers)}`);
-  Logs.http(`Incoming Remote Address: ${req.headers['x-forwarded-for'] || req.ip || req.socket.remoteAddress}`);
-
   const { id, type } = req.query;
 
   if (!id || !type) {
@@ -566,11 +558,6 @@ router.get('/user/profile/image', async (req, res) => {
 });
 
 router.post('/user/customer/edit/address', async (req, res) => {
-  Logs.http(`Received ${req.method} request to ${req.url}`);
-  Logs.http(`Request Body: ${JSON.stringify(req.body)}`);
-  Logs.http(`Request Headers: ${JSON.stringify(req.headers)}`);
-  Logs.http(`Incoming Remote Address: ${req.headers['x-forwarded-for'] || req.ip || req.socket.remoteAddress}`);
-
   const { id, latitude, longitude } = req.body;
 
   try {
@@ -611,12 +598,6 @@ router.post('/user/customer/edit/address', async (req, res) => {
 });
 
 router.post('/user/customer/edit/profile', upload.single('image'),  async (req, res) => {
-  Logs.http(`Received ${req.method} request to ${req.url}`);
-  Logs.http(`Request Body: ${JSON.stringify(req.body)}`);
-  Logs.http(`Request Headers: ${JSON.stringify(req.headers)}`);
-  Logs.debug(`Request File: ${JSON.stringify(req.file)}`);
-  Logs.http(`Incoming Remote Address: ${req.headers['x-forwarded-for'] || req.ip || req.socket.remoteAddress}`);
-
   const { id, fname, lname, phone, birth } = req.body;
 
   const PROFILE_DIR  = path.join(__dirname, '../profile/images/customer');
@@ -627,10 +608,11 @@ router.post('/user/customer/edit/profile', upload.single('image'),  async (req, 
       fs.mkdirSync(PROFILE_DIR, { recursive: true });
     }
 
-    await sharp(req.file.buffer)
-      .resize(512, 512)
+    if(req.file) {
+      await sharp(req.file.buffer)
       .png()
       .toFile(PROFILE_PATH);
+    }
 
     const phoneExists = await db('Customer')
       .where('customer_phone_num', phone)
@@ -672,12 +654,7 @@ router.post('/user/customer/edit/profile', upload.single('image'),  async (req, 
   }
 });
 
-router.post('/customereditpassword', async (req, res) => {
-  Logs.http(`Received ${req.method} request to ${req.url}`);
-  Logs.http(`Request Body: ${JSON.stringify(req.body)}`);
-  Logs.http(`Request Headers: ${JSON.stringify(req.headers)}`);
-  Logs.http(`Incoming Remote Address: ${req.headers['x-forwarded-for'] || req.ip || req.socket.remoteAddress}`);
-
+router.post('/user/customer/edit/password', async (req, res) => {
   const { id, currentPassword, newPassword, confirmPassword } = req.body;
 
   if (!id || !currentPassword || !newPassword || !confirmPassword) {
@@ -723,11 +700,6 @@ router.post('/customereditpassword', async (req, res) => {
 });
 
 router.patch('/user/update/presence', async (req, res) => {
-  Logs.debug(`Received ${req.method} request to ${req.url}`);
-  Logs.debug(`Request Body: ${JSON.stringify(req.body)}`);
-  Logs.debug(`Request Headers: ${JSON.stringify(req.headers)}`);
-  Logs.debug(`Incoming Remote Address: ${req.headers['x-forwarded-for'] || req.ip || req.socket.remoteAddress}`);
-
   const { uid, online, last_seen  } = req.body;
 
   try {
@@ -750,7 +722,7 @@ router.patch('/user/update/presence', async (req, res) => {
     return res.status(200).json({ success: true });
   }
   catch (error) {
-    Logs.debug('❌ Error updating presence:', error);
+   // Logs.error('❌ Error updating presence:', error);
     return res.status(500).json({ error: 'Failed to update user presence' });
   }
 });
@@ -777,11 +749,6 @@ router.patch('/user/update/presence', async (req, res) => {
  * and updates the authentication table with the new token.
  */
 router.post('/login', async (req, res) => {
-  Logs.http(`Received ${req.method} request to ${req.url}`);
-  Logs.http(`Request Body: ${JSON.stringify(req.body)}`);
-  Logs.http(`Request Headers: ${JSON.stringify(req.headers)}`);
-  Logs.http(`Incoming Remote Address: ${req.headers['x-forwarded-for'] || req.ip || req.socket.remoteAddress}`);
-
   const { username, password } = req.body;
 
   if (!username || !password) {
@@ -923,7 +890,7 @@ router.post('/login', async (req, res) => {
     let profile = null;
 
     if (fs.existsSync(IMAGE_PATH)) {
-      profile = `${WEBSITE_URL}/user/profile/image?id=${matchedUser[matchedType.idField]}&type=${matchedType.type}`;
+      profile = `https://hydrohub.ddns.net/user/profile/image?id=${matchedUser[matchedType.idField]}&type=${matchedType.type}`;
     }
 
     mappedData.Type = matchedType.type;
@@ -961,11 +928,6 @@ router.post('/login', async (req, res) => {
  * removes the authentication entry if valid, and sends routerropriate responses based on the outcome.
  */
 router.post('/user/logout', async (req, res) => {
-  Logs.http(`Received ${req.method} request to ${req.url}`);
-  Logs.http(`Request Body: ${JSON.stringify(req.body)}`);
-  Logs.http(`Request Headers: ${JSON.stringify(req.headers)}`);
-  Logs.http(`Incoming Remote Address: ${req.headers['x-forwarded-for'] || req.ip || req.socket.remoteAddress}`);
-
   const { userid, token } = req.body;
 
   if (!userid || !token) {
@@ -1014,11 +976,6 @@ router.post('/user/logout', async (req, res) => {
  * @returns {Promise<void>} Sends a JSON response with the retrieved orders or an error message.
  */
 router.post('/get-orders', async (req, res) => {
-  Logs.http(`Received ${req.method} request to ${req.url}`);
-  Logs.http(`Request Body: ${JSON.stringify(req.body)}`);
-  Logs.http(`Request Headers: ${JSON.stringify(req.headers)}`);
-  Logs.http(`Incoming Remote Address: ${req.headers['x-forwarded-for'] || req.ip || req.socket.remoteAddress}`);
-
   const { ws_id, status } = req.body;
 
   if (!ws_id || !status) {
@@ -1061,11 +1018,6 @@ router.post('/get-orders', async (req, res) => {
  * @returns {Promise<void>} Sends a JSON response with the retrieved order details or an error message.
  */
 router.post('/get-order-datails', async (req, res) => {
-  Logs.http(`Received ${req.method} request to ${req.url}`);
-  Logs.http(`Request Body: ${JSON.stringify(req.body)}`);
-  Logs.http(`Request Headers: ${JSON.stringify(req.headers)}`);
-  Logs.http(`Incoming Remote Address: ${req.headers['x-forwarded-for'] || req.ip || req.socket.remoteAddress}`);
-
   const { order_id } = req.body;
 
   if (!order_id) {
@@ -1112,11 +1064,6 @@ router.post('/get-order-datails', async (req, res) => {
  * @returns {void} - Sends a JSON response with a success message or an error message.
  */
 router.post('/feedback', async (req, res) => {
-  Logs.http(`Received ${req.method} request to ${req.url}`);
-  Logs.http(`Request Body: ${JSON.stringify(req.body)}`);
-  Logs.http(`Request Headers: ${JSON.stringify(req.headers)}`);
-  Logs.http(`Incoming Remote Address: ${req.headers['x-forwarded-for'] || req.ip || req.socket.remoteAddress}`);
-
   const { rating, comment, order_id } = req.body;
 
   if (!rating || !comment) {
@@ -1172,11 +1119,6 @@ router.post('/feedback', async (req, res) => {
  * @returns {Promise<void>} Sends a JSON response indicating the upload status of the GCash QR code.
  */
 router.post('/upload-qrcode-gcash', upload.single('gcash_qr'), async (req, res) => {
-  Logs.http(`Received ${req.method} request to ${req.url}`);
-  Logs.http(`Request Body: ${JSON.stringify(req.body)}`);
-  Logs.http(`Request Headers: ${JSON.stringify(req.headers)}`);
-  Logs.http(`Incoming Remote Address: ${req.headers['x-forwarded-for'] || req.ip || req.socket.remoteAddress}`);
-
   const { station_id } = req.body;
 
   const qrCodeFilePath = path.join(__dirname, 'public', station_id, 'img', 'qr', req.file.originalname);
@@ -1221,11 +1163,6 @@ router.post('/upload-qrcode-gcash', upload.single('gcash_qr'), async (req, res) 
  * @returns {Promise<void>} Sends a JSON response indicating the upload status of the PayMaya QR code.
  */
 router.post('/upload-qrcode-maya', upload.single('maya_qr'), async (req, res) => {
-  Logs.http(`Received ${req.method} request to ${req.url}`);
-  Logs.http(`Request Body: ${JSON.stringify(req.body)}`);
-  Logs.http(`Request Headers: ${JSON.stringify(req.headers)}`);
-  Logs.http(`Incoming Remote Address: ${req.headers['x-forwarded-for'] || req.ip || req.socket.remoteAddress}`);
-
   const { station_id } = req.body;
 
   const qrCodeFilePath = path.join(__dirname, 'public', station_id, 'img', 'qr', req.file.originalname);
@@ -1257,10 +1194,6 @@ router.post('/upload-qrcode-maya', upload.single('maya_qr'), async (req, res) =>
 const serverStartTime = new Date();
 
 router.get('/ping', async (req, res) => {
-  Logs.http(`Received ${req.method} request to ${req.url}`);
-  Logs.http(`Request Headers: ${JSON.stringify(req.headers)}`);
-  Logs.http(`Incoming Remote Address: ${req.headers['x-forwarded-for'] || req.ip || req.socket.remoteAddress}`);
-
   try {
     res.status(200).json({
       status: 'ok',
