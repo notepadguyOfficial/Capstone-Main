@@ -280,4 +280,12 @@ router.post('/user/logout', async (req, res) => {
 
 // #endregion
 
+// #region Test Routes
+
+router.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK' });
+});
+
+// #endregion
+
 module.exports = router;
