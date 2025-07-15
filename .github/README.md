@@ -1,5 +1,7 @@
 # Capstone Project
 
+[![Ubuntu-Test](https://github.com/notepadguyOfficial/Capstone-Main/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/notepadguyOfficial/Capstone-Main/actions/workflows/test.yml?query=branch%3Amain)
+
 ## Table of Contents
 
 - [Introduction](#introduction)
