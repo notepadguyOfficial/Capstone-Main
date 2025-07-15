@@ -4,21 +4,19 @@ const os = require('os');
 const axios = require('axios');
 
 const WebSocket = require('ws');
-const ADMIN_WEBSOCKET = require('./websockets/Admin.js');
-
 const cors = require('cors');
 const http = require('http');
 const Logs = require('./utils/Logs');
 const { channels } = require('./utils/lib');
 
-const routes = require('./endpoints/routes.js');
-const Customer = require('./endpoints/Customers.js');
-const Admin = require('./endpoints/Admin.js');
+const routes = require('./endpoints/routes');
+const Customer = require('./endpoints/Customers');
+const Admin = require('./endpoints/Admin');
 
 const { db, Connect, Stop } = require('./config/database');
 require('dotenv').config();
 
-const port = process.env.SERVER_PORT;
+const ADMIN_WEBSOCKET = require('./websockets/Admin');
 
 const app = express();
 const server = http.createServer(app);
@@ -55,14 +53,12 @@ server.on('upgrade', (req, socket, head) => {
 
 sockets.on('connection', async (ws, req) => {
   Logs.http('WebSocket client connected.');
-
   const params = new URLSearchParams(req.url.split('?')[1]);
   const intent = params.get('intent');
 
   switch (intent) {
     case 'Admin':
       return ADMIN_WEBSOCKET(ws, req, params);
-
     default:
       ws.send(JSON.stringify({ type: 'error', message: 'Invalid intent' }));
       return ws.close();
@@ -73,36 +69,6 @@ app.use('/api/', routes);
 app.use('/api/Customer', Customer);
 app.use('/api/Admin', Admin);
 
-app.use((req, res) => {
-  res.status(404).send();
-});
+app.use((req, res) => res.status(404).send());
 
-server.listen(port, async () => {
-  const localhost = () => {
-    const network = os.networkInterfaces();
-    for (let name in network) {
-      for (let address of network[name]) {
-        if (address.family == 'IPv4' && !address.internal) {
-          return address.address;
-        }
-      }
-    }
-  };
-
-  const public = async () => {
-    try {
-      const response = await axios.get('https://api.ipify.org?format=json');
-      return response.data.ip;
-    } catch (error) {
-      return null;
-    }
-  };
-
-  const publichost = await public();
-
-  Logs.info(`Local Host: ${localhost()}`);
-  Logs.info(`Public Host: ${publichost}`);
-  Logs.info(`Port: ${port}`);
-
-  await Connect(channels);
-});
+module.exports = { app, server, sockets, Connect, Stop };

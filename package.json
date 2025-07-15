@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "main": "app.js",
   "scripts": {
+    "start": "node server.js",
     "test": "jest",
-    "start": "node app.js",
-    "dev": "nodemon app.js"
+    "dev": "nodemon server.js"
   },
   "keywords": [],
   "author": "NotepadguyOfficial",
