@@ -42,19 +42,6 @@ router.post('/register', async (req, res) => {
       .onConflict('userid')
       .merge({ token, created_at: db.fn.now(), updated_at: db.fn.now(), online: 1 });
 
-    const IMAGE_PATH = path.join(
-        __dirname,
-        '../profile/images/',
-        container.folder,
-        `profile_${user[container.field]}.png`
-    );
-
-    let profile = null;
-
-    if (fs.existsSync(IMAGE_PATH)) {
-      profile = `https://hydrohub.ddns.net/user/profile/image?id=${user[container.field]}&type=1`;
-    }
-
     const payload = {
       ID: user[container.field],
       Fname: fname,
@@ -64,7 +51,7 @@ router.post('/register', async (req, res) => {
       Birth: birth ?? null,
       Type: type,
       Token: token,
-      ProfilePicture: profile
+      ProfilePicture: null
     };
 
     Logs.http(`Response being sent: User Registered Successfully! User ID: ${user[container.field]} | Token: ${token}`);
@@ -117,7 +104,7 @@ router.post('/user/edit/profile', upload.single('image'),  async (req, res) => {
       });
 
     const profile = req.file
-    ? `https://hydrohub.ddns.net/user/profile/image?id=${id}&type=1`
+    ? `https://hydrohub.ddns.net/api/user/profile/image?id=${id}&type=1`
     : null;
 
     const data = {

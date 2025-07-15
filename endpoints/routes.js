@@ -212,7 +212,7 @@ router.post('/login', async (req, res) => {
     let profile = null;
 
     if (fs.existsSync(IMAGE_PATH)) {
-      profile = `https://hydrohub.ddns.net/user/profile/image?id=${matchedUser[matchedType.idField]}&type=${matchedType.type}`;
+      profile = `https://hydrohub.ddns.net/api/user/profile/image?id=${matchedUser[matchedType.idField]}&type=${matchedType.type}`;
     }
 
     mappedData.Type = matchedType.type;
