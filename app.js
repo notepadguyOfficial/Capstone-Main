@@ -1,14 +1,20 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const bcrypt = require('bcryptjs');
 const os = require('os');
 const axios = require('axios');
+
 const WebSocket = require('ws');
+const ADMIN_WEBSOCKET = require('./websockets/Admin.js');
+
 const cors = require('cors');
 const http = require('http');
 const Logs = require('./utils/Logs');
-const { type_enum, GenerateToken, channels } = require('./utils/lib');
+const { channels } = require('./utils/lib');
+
 const routes = require('./endpoints/routes.js');
+const Customer = require('./endpoints/Customers.js');
+const Admin = require('./endpoints/Admin.js');
+
 const { db, Connect, Stop } = require('./config/database');
 require('dotenv').config();
 
@@ -38,7 +44,7 @@ app.use(async (req, res, next) => {
 });
 
 server.on('upgrade', (req, socket, head) => {
-  if (req.url.startsWith('/ws')) {
+  if (req.url.startsWith('/api/ws')) {
     sockets.handleUpgrade(req, socket, head, (ws) => {
       sockets.emit('connection', ws, req);
     });
@@ -50,52 +56,22 @@ server.on('upgrade', (req, socket, head) => {
 sockets.on('connection', async (ws, req) => {
   Logs.http('WebSocket client connected.');
 
-  const param = new URLSearchParams(req.url.split('?')[1]);
-  const intent = param.get('intent');
-  const token = param.get('token');
+  const params = new URLSearchParams(req.url.split('?')[1]);
+  const intent = params.get('intent');
 
-  if (intent === 'GetDataCount') {
-    const push = async () => {
-      try {
-        const data = await GetDataCount();
-        ws.send(JSON.stringify({ type: 'UserOnlineCount', data: data }));
-      } catch (error) {
-        Logs.error(`Error getting user count: ${error}`);
-      }
-    };
+  switch (intent) {
+    case 'Admin':
+      return ADMIN_WEBSOCKET(ws, req, params);
 
-    await push();
-    const interval = setInterval(push, 10000);
-
-    ws.on('close', async () => {
-      clearInterval(interval);
-      Logs.http('WebSocket client disconnected.');
-      if (sockets.clients.size === 0) {
-        await Stop([channels]);
-        Logs.http('Stopped listening to PostgreSQL because no clients are connected.');
-      }
-    });
-  } else {
-    ws.send(JSON.stringify({ type: 'error', message: 'Invalid intent' }));
-    ws.close();
+    default:
+      ws.send(JSON.stringify({ type: 'error', message: 'Invalid intent' }));
+      return ws.close();
   }
 });
 
-async function GetDataCount() {
-  const [GetOnlineUsers, GetCustomersCount, GetWrsCount] = await Promise.all([
-    db('authentication').count('userid as count').where({ online: 1 }).first(),
-    db('Customer').count('customer_id as count').first(),
-    db('water_refilling_station').count('station_id as count').first(),
-  ]);
-
-  return {
-    OnlineCount: GetOnlineUsers.count,
-    CustomerCount: GetCustomersCount.count,
-    WRSCount: GetWrsCount.count
-  };
-}
-
-app.use('/', routes);
+app.use('/api/', routes);
+app.use('/api/Customer', Customer);
+app.use('/api/Admin', Admin);
 
 app.use((req, res) => {
   res.status(404).send();

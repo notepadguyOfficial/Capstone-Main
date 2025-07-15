@@ -1,6 +1,10 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 require('dotenv').config();
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+const sharp = require('sharp');
 
 const SECRET_KEY = process.env.SECRET_TOKEN;
 
@@ -46,8 +50,39 @@ function GenerateToken(id, type) {
     return jwt.sign(payload, SECRET_KEY);
 }
 
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    let folder;
+
+    switch (parseInt(req.body.type)) {
+      case 0:
+        folder = "admin";
+        break;
+      case 1:
+        folder = "customer";
+        break;
+      case 2:
+        folder = "owner";
+        break;
+      case 3:
+        folder = "staff";
+        break;
+    }
+    const PROFILE_PATH =  path.join(__dirname, '../profile/images/', folder);
+    cb(null, PROFILE_PATH);
+  },
+  filename: function(req, file, cb) {
+    const ext = path.extname(file.originalname);
+    const filename = `profile_${req.body.id}${ext}`;
+    cb(null, filename);
+  }
+});
+
+const upload = multer({ storage: multer.memoryStorage() });
+
 module.exports = {
     type_enum,
     GenerateToken,
-    channels
+    channels,
+    upload
 }
