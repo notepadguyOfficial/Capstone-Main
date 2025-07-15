@@ -65,7 +65,7 @@ sockets.on('connection', async (ws, req) => {
   }
 });
 
-app.use('/api/', routes);
+app.use('/api', routes);
 app.use('/api/Customer', Customer);
 app.use('/api/Admin', Admin);
 
