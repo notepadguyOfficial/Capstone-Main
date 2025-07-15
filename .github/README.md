@@ -49,6 +49,8 @@ Hydro App is a mobile platform designed to streamline sales, orders, delivery, a
     npm install -g nodemon
     ```
 
+    **!Important** rename `.env.example` to `.env`
+
 3. **Set up the database:**
     - Ensure PostgreSQL is installed and running.
     - Create a new database.

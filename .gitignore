@@ -9,8 +9,8 @@ node_modules/
 # VS Code editor settings
 .vscode/
 
-# Environment config
-.env
-
 # Secrets
 profile/
+
+# Environment config
+.env
