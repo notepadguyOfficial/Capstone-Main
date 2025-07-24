@@ -14,18 +14,20 @@ const LOG_LEVEL = {
         debug: 5,
         critical: 6,
         alert: 7,
-        database: 8
+        database: 8,
+        websokect: 9
     },
     colors: {
         error: 'red',
-        warn: 'red',
+        warn: 'magenta',
         info: 'green',
         http: 'blue',
         verbose: 'grey',
         debug: 'white',
         critical: 'yellow',
         alert: 'yellow',
-        database: 'blue'
+        database: 'blue',
+        websocket: 'magenta',
     },
 };
 
@@ -108,6 +110,7 @@ const Logs = winston.createLogger({
         Transport('Error', 'error', ['critical', 'warn', 'error']),
         Transport('DB', 'database', 'database'),
         Transport('HTTP', 'http', 'http'),
+        Transport('WebSocket', 'websocket', 'websocket'),
     ],
 });
 

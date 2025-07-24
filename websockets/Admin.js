@@ -25,7 +25,7 @@ async function GetDataCount(ws) {
 async function handle(ws, req, params) {
     const action = params.get('action');
 
-    Logs.http(`Admin WebSocket connected with action: ${action}`);
+    Logs.websokect(`Admin WebSocket connected with action: ${action}`);
 
     switch (action) {
         case 'GetDataCount':
@@ -34,10 +34,10 @@ async function handle(ws, req, params) {
 
             ws.on('close', async () => {
                 clearInterval(interval);
-                Logs.http('Admin WebSocket disconnected.');
+                Logs.websokect('Admin WebSocket disconnected.');
                 if (ws._server?.clients?.size === 0) {
                     await Stop([channels]);
-                    Logs.http('Stopped listening to PostgreSQL because no clients are connected.');
+                    Logs.websokect('Stopped listening to PostgreSQL because no clients are connected.');
                 }
             });
             break;
