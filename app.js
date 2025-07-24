@@ -1,15 +1,13 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const os = require('os');
 const axios = require('axios');
 
 const WebSocket = require('ws');
 const cors = require('cors');
 const http = require('http');
 const Logs = require('./utils/Logs');
-const { channels } = require('./utils/lib');
 
-const routes = require('./endpoints/routes');
+const Public = require('./endpoints/Public');
 const Customer = require('./endpoints/Customers');
 const Admin = require('./endpoints/Admin');
 
@@ -52,7 +50,7 @@ server.on('upgrade', (req, socket, head) => {
 });
 
 sockets.on('connection', async (ws, req) => {
-  Logs.http('WebSocket client connected.');
+  Logs.websokect('WebSocket client connected.');
   const params = new URLSearchParams(req.url.split('?')[1]);
   const intent = params.get('intent');
 
@@ -65,7 +63,7 @@ sockets.on('connection', async (ws, req) => {
   }
 });
 
-app.use('/api', routes);
+app.use('/api', Public);
 app.use('/api/Customer', Customer);
 app.use('/api/Admin', Admin);
 
