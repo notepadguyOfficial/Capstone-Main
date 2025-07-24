@@ -1,7 +1,7 @@
 # Capstone Project
 
-[![Development-Test](https://github.com/notepadguyOfficial/Capstone-Main/actions/workflows/test.yml/badge.svg?branch=development)](https://github.com/notepadguyOfficial/Capstone-Main/actions/workflows/test.yml?query=branch%3Adevelopment)
-[![Production-Build](https://github.com/notepadguyOfficial/Capstone-Main/actions/workflows/production.yml/badge.svg?branch=production)](https://github.com/notepadguyOfficial/Capstone-Main/actions/workflows/production.yml?query=branch%3Aproduction)
+[![Development-Test](https://github.com/notepadguyOfficial/Capstone-Main/actions/workflows/development.yml/badge.svg?branch=development)](https://github.com/notepadguyOfficial/Capstone-Main/actions/workflows/development.yml?query=branch%3Adevelopment)
+[![Production-Build](https://github.com/notepadguyOfficial/Capstone-Main/actions/workflows/production.yml/badge.svg?branch=main)](https://github.com/notepadguyOfficial/Capstone-Main/actions/workflows/production.yml?query=branch%3Amain)
 
 
 ## Table of Contents
