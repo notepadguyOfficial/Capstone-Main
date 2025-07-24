@@ -15,7 +15,7 @@ const LOG_LEVEL = {
         critical: 6,
         alert: 7,
         database: 8,
-        websokect: 9
+        websocket: 9
     },
     colors: {
         error: 'red',
@@ -98,7 +98,7 @@ const Transport = (filename, level, filtered) =>
  */
 const Logs = winston.createLogger({
     levels: LOG_LEVEL.levels,
-    level: 'database',
+    level: 'websocket',
     transports: [
         new winston.transports.Console({
             format: winston.format.combine(

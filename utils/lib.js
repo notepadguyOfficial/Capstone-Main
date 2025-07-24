@@ -1,21 +1,18 @@
 const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
-require('dotenv').config();
 const multer = require('multer');
-const fs = require('fs');
 const path = require('path');
-const sharp = require('sharp');
+const axios = require('axios');
+require('dotenv').config();
 
-const SECRET_KEY = process.env.SECRET_TOKEN;
+class Utils {
+  static USER_TYPES = {
+    Admin: 0,
+    Customer: 1,
+    Owner: 2,
+    Staff: 3,
+  };
 
-const type_enum = [
-    0, //Admin
-    1, //Customer
-    2, //Water Refilling Owner
-    3 // Staff
-];
-
-const channels = [
+  static channels = [
     'LOGIN',
     'REGISTER',
     'CUSTOMER',
@@ -23,66 +20,93 @@ const channels = [
     'STAFF',
     'OWNER',
     'REFILLINGSTATION',
-    'SALES'
-]
+    'SALES',
+  ];
 
-/**
- * Generates a random secret key using cryptographically strong pseudo-random data.
- *
- * @param {number} size - The number of bytes to generate.
- * @param {string} encoding - The encoding to use for the output string (e.g., 'hex', 'base64').
- * @returns {string} A string representation of the generated secret key in the specified encoding.
- */
-function SecretKey(size, encoding) {
-    return crypto.randomBytes(size).toString(encoding);
-}
-
-/**
- * Generates a JSON Web Token (JWT) for authentication purposes.
- *
- * @param {string|number} id - The unique identifier of the user.
- * @param {number} type - The user type, corresponding to the index in the type_enum array.
- * @returns {string} A signed JWT containing the user's id and type, valid for 1 hour.
- */
-function GenerateToken(id, type) {
-    const payload = {id, type};
-    // return jwt.sign(payload, SecretKey(32, 'hex'), {expiresIn: '1h'});
-    return jwt.sign(payload, SECRET_KEY);
-}
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    let folder;
-
-    switch (parseInt(req.body.type)) {
-      case 0:
-        folder = "admin";
-        break;
-      case 1:
-        folder = "customer";
-        break;
-      case 2:
-        folder = "owner";
-        break;
-      case 3:
-        folder = "staff";
-        break;
-    }
-    const PROFILE_PATH =  path.join(__dirname, '../profile/images/', folder);
-    cb(null, PROFILE_PATH);
-  },
-  filename: function(req, file, cb) {
-    const ext = path.extname(file.originalname);
-    const filename = `profile_${req.body.id}${ext}`;
-    cb(null, filename);
+  static parseIp(req) {
+    let ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
+    if (ip === '::1') ip = '127.0.0.1';
+    if (ip.startsWith('::ffff:')) ip = ip.split('::ffff:')[1];
+    return ip;
   }
-});
 
-const upload = multer({ storage: multer.memoryStorage() });
+  static async FetchRequestData(req) {
+    const ip = this.parseIp(req);
 
-module.exports = {
-    type_enum,
-    GenerateToken,
-    channels,
-    upload
+    if (ip === '127.0.0.1') {
+      return {
+        ip,
+        geo: {
+          country: 'Local',
+          countryCode: 'LOCAL',
+          region: 'Local',
+          isp: 'Local ISP',
+          as: 'Local AS',
+          city: 'Localhost',
+          lat: 0,
+          lon: 0,
+          timezone: 'UTC',
+          org: 'Dev Machine',
+        },
+      };
+    }
+
+    try {
+      const geo = await axios.get(`http://ip-api.com/json/${ip}`);
+      return {
+        ip,
+        geo: {
+          country: geo.data.country,
+          countryCode: geo.data.countryCode,
+          region: geo.data.region,
+          isp: geo.data.isp,
+          as: geo.data.as,
+          city: geo.data.city,
+          lat: geo.data.lat,
+          lon: geo.data.lon,
+          timezone: geo.data.timezone,
+          org: geo.data.org,
+        },
+      };
+    } catch (error) {
+      return { ip, geo: null, error: error.message };
+    }
+  }
+
+  static GenerateToken(id, type) {
+    const payload = { id, type };
+    return jwt.sign(payload, process.env.SECRET_TOKEN, { expiresIn: '1h' });
+  }
+
+  static getMulterUpload() {
+    const storage = multer.diskStorage({
+      destination: function (req, file, cb) {
+        let folder;
+
+        switch (parseInt(req.body.type)) {
+          case 0: folder = 'admin'; break;
+          case 1: folder = 'customer'; break;
+          case 2: folder = 'owner'; break;
+          case 3: folder = 'staff'; break;
+          default: folder = 'unknown';
+        }
+
+        const PROFILE_PATH = path.join(__dirname, '../profile/images/', folder);
+        cb(null, PROFILE_PATH);
+      },
+      filename: function (req, file, cb) {
+        const ext = path.extname(file.originalname);
+        const filename = `profile_${req.body.id}${ext}`;
+        cb(null, filename);
+      },
+    });
+
+    return multer({ storage });
+  }
+
+  static getMemoryUpload() {
+    return multer({ storage: multer.memoryStorage() });
+  }
 }
+
+module.exports = Utils;

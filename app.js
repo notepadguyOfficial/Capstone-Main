@@ -16,6 +16,8 @@ require('dotenv').config();
 
 const ADMIN_WEBSOCKET = require('./websockets/Admin');
 
+const Utils = require('./utils/lib');
+
 const app = express();
 const server = http.createServer(app);
 const sockets = new WebSocket.Server({ noServer: true });
@@ -25,18 +27,16 @@ app.use(bodyParser.json());
 app.set('trust proxy', true);
 
 app.use(async (req, res, next) => {
-  const raw = req.ip === '::1' ? '127.0.0.1' : req.ip;
-  const ip = raw.includes('::ffff:') ? raw.split('::ffff:')[1] : raw;
-  try {
-    Logs.http(`${req.method} ${req.url} - IP: ${ip}`);
-    const geo = await axios.get(`http://ip-api.com/json/${ip}`);
-    Logs.http(`Geo Info: ${geo.data.country} (${geo.data.countryCode}) - Region ${geo.data.region} | ISP: ${geo.data.isp} | AS: ${geo.data.as}`);
-    Logs.http(`Received ${req.method} request to ${req.url}`);
-    next();
-  } catch (error) {
-    Logs.error(`Error processing IP: ${error}`);
-    next();
+  const { ip, geo, error } = await Utils.FetchRequestData(req);
+  
+  Logs.http(`${req.method} ${req.url} - IP: ${ip}`);
+
+  if (geo) {
+    Logs.http(`Geo Info: ${geo.country} (${geo.countryCode}) - Region ${geo.region} | ISP: ${geo.isp} | AS: ${geo.as}`);
+  } else {
+    Logs.warn(`Failed to fetch geo info for IP ${ip}: ${error}`);
   }
+  next();
 });
 
 server.on('upgrade', (req, socket, head) => {
@@ -50,7 +50,10 @@ server.on('upgrade', (req, socket, head) => {
 });
 
 sockets.on('connection', async (ws, req) => {
-  Logs.websokect('WebSocket client connected.');
+  const { ip } = await Utils.FetchRequestData(req);
+
+  Logs.websocket(`WebSocket connection established from IP: ${ip}`);
+
   const params = new URLSearchParams(req.url.split('?')[1]);
   const intent = params.get('intent');
 
