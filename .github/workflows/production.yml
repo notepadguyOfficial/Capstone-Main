@@ -1,4 +1,4 @@
-name: Capstone Production
+name: Production
 
 on:
   push:

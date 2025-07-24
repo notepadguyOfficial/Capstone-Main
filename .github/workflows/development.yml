@@ -1,4 +1,4 @@
-name: Capstone Test
+name: development
 
 on:
   push:
