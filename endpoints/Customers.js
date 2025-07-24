@@ -7,6 +7,7 @@ const { GenerateToken, upload } = require('../utils/lib');
 const bcrypt = require('bcrypt');
 const axios = require('axios');
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+const API_TOKEN = process.env.API_TOKEN;
 
 // #region Register
 
@@ -104,7 +105,7 @@ router.post('/user/edit/profile', upload.single('image'),  async (req, res) => {
       });
 
     const profile = req.file
-    ? `https://hydrohub.ddns.net/api/user/profile/image?id=${id}&type=1`
+    ? `https://hydrohub.hopto.org/api/user/profile/image?id=${id}&type=1`
     : null;
 
     const data = {
@@ -212,7 +213,21 @@ router.post('/user/edit/profile/password', async (req, res) => {
 // #region others
 
 router.get('/get/list/wrs' , async (req, res) => {
+  const header = req.headers['authorization'];
+
   try {
+    if (!header || header.startsWith('Bearer')) {
+      Logs.error(`Response being sent: Missing or invalid Authorization header | status: 401`);
+      return res.status(401).json({ error: 'Missing or invalid Authorization header' });
+    }
+
+    const token = header.split(' ')[1];
+
+    if(token !== API_TOKEN) {
+      Logs.error(`Response being sent: Forbidden: Invalid API Token | status: 403`);
+      return res.status(403).json({ error: 'Forbidden: Invalid API Token' });
+    }
+
     const result = await db('water_refilling_station')
       .select('*');
 
