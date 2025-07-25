@@ -3,7 +3,7 @@ const router = express.Router();
 const Logs = require('../utils/Logs');
 const { db } = require('../config/database');
 const fs = require('fs');
-const { GenerateToken, upload } = require('../utils/lib');
+const Utils = require('../utils/lib');
 const bcrypt = require('bcrypt');
 const axios = require('axios');
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
@@ -36,7 +36,7 @@ router.post('/register', async (req, res) => {
       .insert(container.data)
       .returning([container.field]);
 
-    const token = GenerateToken(user[container.field], 1);
+    const token = Utils.GenerateToken(user[container.field], 1);
 
     await db('authentication')
       .insert({ userid: user[container.field], token, online: 1 })
@@ -68,7 +68,7 @@ router.post('/register', async (req, res) => {
 
 
 // #region profile
-router.post('/user/edit/profile', upload.single('image'),  async (req, res) => {
+router.post('/user/edit/profile', Utils.getMemoryUpload().single('image'),  async (req, res) => {
   const { id, fname, lname, phone, birth } = req.body;
 
   const PROFILE_DIR  = path.join(__dirname, '../profile/images/customer');
@@ -215,8 +215,10 @@ router.post('/user/edit/profile/password', async (req, res) => {
 router.get('/get/list/wrs' , async (req, res) => {
   const header = req.headers['authorization'];
 
+  Logs.http(`Received request to get list of Water Refilling Stations | Authorization Header: ${header}`);
+
   try {
-    if (!header || header.startsWith('Bearer')) {
+    if (!header || !header.startsWith('Bearer ')) {
       Logs.error(`Response being sent: Missing or invalid Authorization header | status: 401`);
       return res.status(401).json({ error: 'Missing or invalid Authorization header' });
     }
@@ -259,10 +261,23 @@ router.get('/get/list/wrs' , async (req, res) => {
 // #region Checkers
 
 router.get('/user/check/phone', async(req, res) => {
+  const header = req.headers['authorization'];
   const phone = req.query.phone;
 
   try{
-    const result = await db('Customers')
+    if (!header || !header.startsWith('Bearer ')) {
+      Logs.error(`Response being sent: Missing or invalid Authorization header | status: 401`);
+      return res.status(401).json({ error: 'Missing or invalid Authorization header' });
+    }
+
+    const token = header.split(' ')[1];
+
+    if(token !== API_TOKEN) {
+      Logs.error(`Response being sent: Forbidden: Invalid API Token | status: 403`);
+      return res.status(403).json({ error: 'Forbidden: Invalid API Token' });
+    }
+    
+    const result = await db('Customer')
       .where('customer_phone_num', phone)
       .first();
 
@@ -280,10 +295,23 @@ router.get('/user/check/phone', async(req, res) => {
 });
 
 router.get('/user/check/username', async(req, res) => {
+  const header = req.headers['authorization'];
   const username = req.query.username;
 
   try{
-    const result = await db('Customers')
+    if (!header || !header.startsWith('Bearer ')) {
+      Logs.error(`Response being sent: Missing or invalid Authorization header | status: 401`);
+      return res.status(401).json({ error: 'Missing or invalid Authorization header' });
+    }
+
+    const token = header.split(' ')[1];
+
+    if(token !== API_TOKEN) {
+      Logs.error(`Response being sent: Forbidden: Invalid API Token | status: 403`);
+      return res.status(403).json({ error: 'Forbidden: Invalid API Token' });
+    }
+
+    const result = await db('Customer')
       .where('customer_username', username)
       .first();
 
@@ -291,8 +319,9 @@ router.get('/user/check/username', async(req, res) => {
       Logs.warn(`Response being sent: Username already exists | status: 409 | Code: 1001`);
       return res.status(409).json({ error: 'Username already exists', code: 1001 });
     }
-
-    return res.status(200);
+    
+    Logs.http(`Response being sent: Username is available | status: 2000`);
+    return res.status(200).json({ message: 'Username is available' });
   }
   catch(error) {
     Logs.error(`Response being sent: ${error.message}`);

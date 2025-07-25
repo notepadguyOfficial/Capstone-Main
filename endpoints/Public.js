@@ -5,7 +5,7 @@ const { db } = require('../config/database');
 const path = require('path');
 const fs = require('fs');
 
-const { GenerateToken } = require('../utils/lib');
+const Utils = require('../utils/lib');
 const bcrypt = require('bcrypt');
 
 // #region Reusables
@@ -19,16 +19,16 @@ router.get('/user/profile/image', async (req, res) => {
 
   try {
     switch (parseInt(type)) {
-      case 0:
+      case Utils.USER_TYPES.Admin:
         directory = "admin";
         break;
-      case 1:
+      case Utils.USER_TYPES.Customer:
         directory = "customer";
         break;
-      case 2:
+      case Utils.USER_TYPES.Owner:
         directory = "owner";
         break;
-      case 3:
+      case Utils.USER_TYPES.Staff:
         directory = "staff";
         break;
       default:
@@ -81,7 +81,7 @@ router.post('/login', async (req, res) => {
 
   const userTypes = [
     {
-      type: 0,
+      type: Utils.USER_TYPES.Admin,
       table: 'app_owner',
       idField: 'app_owner_id',
       userField: 'app_owner_username',
@@ -98,7 +98,7 @@ router.post('/login', async (req, res) => {
       }
     },
     {
-      type: 1,
+      type: Utils.USER_TYPES.Customer,
       table: 'Customer',
       idField: 'customer_id',
       userField: 'customer_username',
@@ -118,7 +118,7 @@ router.post('/login', async (req, res) => {
       }
     },
     {
-      type: 2,
+      type: Utils.USER_TYPES.Owner,
       table: 'station_owner',
       idField: 'st_owner_id',
       userField: 'st_owner_username',
@@ -134,7 +134,7 @@ router.post('/login', async (req, res) => {
       }
     },
     {
-      type: 3,
+      type: Utils.USER_TYPES.Staff,
       table: 'staff',
       idField: 'staff_id',
       userField: 'staff_username',
@@ -157,7 +157,7 @@ router.post('/login', async (req, res) => {
 
     for (const userType of userTypes) {
 
-      const selectFields = userType.type === 1
+      const selectFields = userType.type === Utils.USER_TYPES.Customer
         ? [
           '*',
           db.raw(`TO_CHAR(customer_dateofbirth, 'YYYY-MM-DD') AS customer_dateofbirth`)
@@ -187,7 +187,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid Password!', code: 1004 });
     }
 
-    const token = GenerateToken(matchedUser[matchedType.idField], matchedType.type);
+    const token = Utils.GenerateToken(matchedUser[matchedType.idField], matchedType.type);
 
     await db('authentication')
       .insert({ userid: matchedUser[matchedType.idField], token, online: 1 })

@@ -2,7 +2,14 @@ const winston = require('winston');
 const fs = require('fs');
 const path = require('path');
 const DailyRotateFile = require('winston-daily-rotate-file');
+const readline = require('readline');
 require('dotenv').config();
+
+let render = null;
+
+function setRender(fn) {
+    render = fn;
+}
 
 const LOG_LEVEL = {
     levels: {
@@ -15,7 +22,7 @@ const LOG_LEVEL = {
         critical: 6,
         alert: 7,
         database: 8,
-        websokect: 9
+        websocket: 9
     },
     colors: {
         error: 'red',
@@ -42,8 +49,8 @@ try {
     if (!fs.existsSync(directory)) {
         fs.mkdirSync(directory, { recursive: true });
     }
-} 
-catch(error) {
+}
+catch (error) {
     console.error('Error creating log directory:', error);
 }
 
@@ -96,15 +103,33 @@ const Transport = (filename, level, filtered) =>
  * 
  * @type {Logger}
  */
+
 const Logs = winston.createLogger({
     levels: LOG_LEVEL.levels,
-    level: 'database',
+    level: 'websocket',
     transports: [
         new winston.transports.Console({
             format: winston.format.combine(
                 winston.format.colorize({ all: true }),
                 formatter
             ),
+            log(info, callback) {
+                const readline = require('readline');
+                const { format } = this;
+
+                const formatted = format.transform(info, format.options);
+                const message = formatted?.[Symbol.for('message')] || formatted?.message || '';
+
+                readline.clearLine(process.stdout, 0);
+                readline.cursorTo(process.stdout, 0);
+                process.stdout.write(`${message}\n`);
+
+                if (render) {
+                    setTimeout(render, 10);
+                }
+
+                callback();
+            },
         }),
         Transport('App', 'debug', ['alert', 'debug', 'verbose', 'info']),
         Transport('Error', 'error', ['critical', 'warn', 'error']),
@@ -115,3 +140,4 @@ const Logs = winston.createLogger({
 });
 
 module.exports = Logs;
+module.exports.setRender = setRender;
