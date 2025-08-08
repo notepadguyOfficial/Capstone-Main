@@ -75,8 +75,11 @@ const createFilter = (levels) =>
  */
 const formatter = winston.format.combine(
     winston.format.timestamp({ format: 'YYYY-MM-DD hh:mm:ss.SSS A' }),
-    winston.format.align(),
-    winston.format.printf((info) => `[${info.level}] [${info.timestamp}]: ${info.message}`)
+    winston.format.errors({ stack: true }),
+    winston.format.printf((info) => {
+        const location = info.location ? `[${info.location}] ` : '';
+        return `${location}[${info.level}] [${info.timestamp}]: ${info.message}`;
+    })
 );
 
 /**
@@ -138,6 +141,33 @@ const Logs = winston.createLogger({
         Transport('WebSocket', 'websocket', 'websocket'),
     ],
 });
+
+for (const level of Object.keys(LOG_LEVEL.levels)) {
+    const orig = Logs[level].bind(Logs);
+    Logs[level] = (...args) => {
+        const stack = new Error().stack?.split('\n') || [];
+        const callerLine = stack.find(line =>
+            !line.includes('node_modules') &&
+            !line.includes('winston') &&
+            !line.includes('internal') &&
+            !line.includes('Logs.js') &&
+            line.includes('.js:')
+        );
+        let location = '';
+        if (callerLine) {
+            const match = callerLine.match(/\(([^)]+)\)/) || callerLine.match(/at (.+)/);
+            if (match && match[1]) {
+                location = path.relative(process.cwd(), match[1]);
+            }
+        }
+        if (typeof args[0] === 'object') {
+            args[0].location = location;
+        } else {
+            args[0] = { message: args[0], location };
+        }
+        return orig(...args);
+    };
+}
 
 module.exports = Logs;
 module.exports.setRender = setRender;

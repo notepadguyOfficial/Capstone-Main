@@ -86,6 +86,7 @@ Hydro App is a mobile platform designed to streamline sales, orders, delivery, a
 | 1002 | Phone Number Already Exists | A user tried to register an existing phone number. |
 | 1003 | User Not Found              | The specified user was not found in the database. |
 | 1004 | Invalid Password            | The password provided is incorrect. |
+| 1005 | Vonage Verification Error   | The Verification Code is Invalid. |
 
 ### Server Errors
 
@@ -105,6 +106,7 @@ Hydro App is a mobile platform designed to streamline sales, orders, delivery, a
     npm run start #normal start
     ```
     or
+    [!Note] CLI Commands are disabled in dev
     ```bash
     npm run dev #nodemon for development
     ```

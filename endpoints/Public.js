@@ -4,11 +4,65 @@ const Logs = require('../utils/Logs');
 const { db } = require('../config/database');
 const path = require('path');
 const fs = require('fs');
-
+const { Vonage } = require('@vonage/server-sdk');
 const Utils = require('../utils/lib');
 const bcrypt = require('bcrypt');
 
 // #region Reusables
+const vonage = new Vonage({
+  apiKey: process.env.VONAGE_API_KEY,
+  apiSecret: process.env.VONAGE_API_SECRET
+});
+
+let requestsIds = {};
+
+router.post('/user/code/send', async (req, res) => {
+  const { phone } = req.body;
+
+  try {
+    const response = await vonage.verify.start({
+      number: phone,
+      brand: "HydroHub"
+    });
+
+    requestsIds = response.request_id;
+    res.status(200).json({
+      success: true,
+      message: 'Verification Code Sent!'
+    });
+    
+    Logs.http(`Response being sent: Verification Code Sent! | Phone Number: ${phone} | Request ID: ${response.request_id}`);
+  }
+  catch(error) {
+    Logs.error(`Response being sent: ${error.message}`);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/user/code/verify', async (req, res) => {
+  const { phone, code } = req.body;
+
+  try {
+    const response = await vonage.verify.check(requestsIds[phone], code);
+    if(response.status === "0") {
+      res.status(200).json({
+        success: true,
+        message: "Verified!",
+      });
+    }
+    else {
+      res.status(200).json({
+        success: false,
+        message: response.error_text,
+        code: 1005
+      });
+    }
+  }
+  catch(error) {
+    Logs.error(`Response being sent: ${error.message}`);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 router.get('/user/profile/image', async (req, res) => {
   const { id, type } = req.query;

@@ -7,7 +7,7 @@ module.exports = {
         if (args.length === 0) {
             Logs.info(`Available Commands:`);
             for (const [name, command] of Commands.entries()) {
-                console.log(`   - ${name}: ${command.description || 'No Description'}`);
+                Logs.info(`- ${name}: ${command.description || 'No Description'}`);
             }
             return;
         } else {
