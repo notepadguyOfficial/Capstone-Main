@@ -286,7 +286,7 @@ router.get('/user/check/phone', async(req, res) => {
       return res.status(409).json({ error: 'Phone number already in use', code: 1002 });
     }
 
-    return res.status(200);
+    return res.status(200).json({ success: true, message: "Phone is not used." });
   }
   catch(error) {
     Logs.error(`Response being sent: ${error.message}`);

@@ -107,6 +107,51 @@ class Utils {
   static getMemoryUpload() {
     return multer({ storage: multer.memoryStorage() });
   }
+
+  static order_message_dir = path.join(__dirname, '../orders/');
+
+  static ensure_order_directory() {
+    if (!fs.existsSync(this.order_message_dir)) {
+      fs.mkdirSync(this.order_message_dir, { recursive: true });
+    }
+  }
+
+  static get_order_chat_file(order_id) {
+    this.ensure_order_directory();
+    return path.join(this.messagesDir, `order_${order_id}.json`);
+  }
+
+  static load_messages(order_id) {
+    const file = this.get_order_chat_file(order_id);
+    if (fs.existsSync(file)) {
+      return JSON.parse(fs.readFileSync(file, 'utf8'));
+    }
+    return [];
+  }
+
+  static save_message(order_id, messages) {
+    fs.writeFileSync(this.get_order_chat_file(order_id), JSON.stringify(messages, null, 2));
+  }
+
+  static add_message(order_id, sender, message) {
+    if(!sender || !message) {
+      throw new Error('Missing sender or text query parameters');
+    }
+    
+    const messages = this.load_messages(order_id);
+
+    const new_message = {
+      id: messages.length + 1,
+      sender,
+      message,
+      timestamp: new Date().toISOString(),
+    };
+
+    messages.push(new_message);
+    this.save_message(order_id, messages);
+
+    return new_message;
+  }
 }
 
 module.exports = Utils;

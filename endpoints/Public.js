@@ -7,8 +7,10 @@ const fs = require('fs');
 const { Vonage } = require('@vonage/server-sdk');
 const Utils = require('../utils/lib');
 const bcrypt = require('bcrypt');
+const API_TOKEN = process.env.API_TOKEN;
 
 // #region Reusables
+
 const vonage = new Vonage({
   apiKey: process.env.VONAGE_API_KEY,
   apiSecret: process.env.VONAGE_API_SECRET
@@ -61,6 +63,64 @@ router.post('/user/code/verify', async (req, res) => {
   catch(error) {
     Logs.error(`Response being sent: ${error.message}`);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/order/chat/', async (req, res) => {
+  const header = req.headers['authorization'];
+  const { order_id } = req.query;
+
+  try {
+    if (!header || !header.startsWith('Bearer ')) {
+      Logs.error(`Response being sent: Missing or invalid Authorization header | status: 401`);
+      return res.status(401).json({ error: 'Missing or invalid Authorization header' });
+    }
+
+    const token = header.split(' ')[1];
+    
+    if(token !== API_TOKEN) {
+      Logs.error(`Response being sent: Forbidden: Invalid API Token | status: 403`);
+      return res.status(403).json({ error: 'Forbidden: Invalid API Token' });
+    }
+
+    if(!order_id) {
+      Logs.warn(`Response being sent: Missing order_id query parameter | status: 400`);
+      return res.status(400).json({ error: 'Missing order_id query parameter' });
+    }
+
+    const message = Utils.load_messages(order_id);
+
+    Logs.http(`Response being sent: Messages for order_id ${order_id} retrieved successfully!`);
+    
+    return req.status(200).json({ message });
+  } catch (error) {
+    Logs.error(`Response being sent: ${error.message}`);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/order/chat', async (req, res) => {
+  const { order_id, sender, text } = req.body;
+
+  try {
+    if(!order_id) {
+      Logs.warn(`Response being sent: Missing order_id query parameter | status: 400`);
+      return res.status(400).json({ error: 'Missing order_id query parameter' });
+    }
+
+    if(!sender || !text) {
+      Logs.warn(`Response being sent: Missing sender or text query parameters | status: 400`);
+      return res.status(400).json({ error: 'Missing sender or text query parameters' });
+    }
+
+    const message = Utils.add_message(order_id, sender, text);
+    
+    Logs.http(`Response being sent: Message added to order_id ${order_id} successfully!`);
+
+    return res.status(201).json(message);
+  } catch (error) {
+    Logs.error(`Response being sent: ${error.message}`);
+    return res.status(500).json({ error: error.message });
   }
 });
 
