@@ -16,7 +16,7 @@ const vonage = new Vonage({
   apiSecret: process.env.VONAGE_API_SECRET
 });
 
-let requestsIds = {};
+let requestsIds = Utils.load_vonage_requests();
 
 router.post('/user/code/send', async (req, res) => {
   const { phone } = req.body;
@@ -27,7 +27,19 @@ router.post('/user/code/send', async (req, res) => {
       brand: "HydroHub"
     });
 
-    requestsIds = response.request_id;
+    if(!requestsIds[phone]) {
+      requestsIds[phone] = [];
+    }
+
+    const record = {
+      request_id: response.request_id,
+      createdAt: new Date().toISOString(),
+      status: "pending"
+    };
+
+    requestsIds[phone].push(record);
+    Utils.save_vonage_requests(requestsIds);
+
     res.status(200).json({
       success: true,
       message: 'Verification Code Sent!'
@@ -45,14 +57,34 @@ router.post('/user/code/verify', async (req, res) => {
   const { phone, code } = req.body;
 
   try {
-    const response = await vonage.verify.check(requestsIds[phone], code);
+    const history = requestsIds[phone] || [];
+    const latest = history[history.length - 1];
+
+    if(!latest || latest.status !== "pending") {
+      return res.status(400).json({
+        success: false,
+        message: "No pending verification found for this number.",
+      });
+    }
+
+    const response = await vonage.verify.check(latest.request_id, code);
+
     if(response.status === "0") {
+      latest.status = "verified";
+      latest.verifiedAt = new Date().toISOString();
+      Utils.save_vonage_requests(requestsIds);
+
       res.status(200).json({
         success: true,
         message: "Verified!",
       });
     }
     else {
+      latest.status = "failed";
+      latest.failedAt  = new Date().toISOString();
+      latest.error = response.error_text;
+      Utils.save_vonage_requests(requestsIds);
+
       res.status(200).json({
         success: false,
         message: response.error_text,

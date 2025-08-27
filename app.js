@@ -6,7 +6,6 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const Logs = require('./utils/Logs');
-const { setRender } = require('./utils/Logs');
 const Public = require('./endpoints/Public');
 const Customer = require('./endpoints/Customers');
 const Admin = require('./endpoints/Admin');
@@ -36,7 +35,7 @@ function render() {
   rl.prompt(true);
 }
 
-setRender(render);
+Logs.setRender(render);
 console.clear();
 
 if (process.stdin.isTTY) {

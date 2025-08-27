@@ -2,6 +2,8 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
 const axios = require('axios');
+const fs = require('fs');
+const Logs = require('./Logs');
 require('dotenv').config();
 
 class Utils {
@@ -151,6 +153,35 @@ class Utils {
     this.save_message(order_id, messages);
 
     return new_message;
+  }
+
+  static vonage_record_path = path.join(__dirname, '../vonage/requests.json');
+
+  static load_vonage_requests() {
+    try{
+      if (fs.existsSync(this.vonage_record_path)) {
+        const content = fs.readFileSync(this.vonage_record_path, "utf8").trim();
+        if(content.length === 0) {
+          return {};
+        }
+
+        return JSON.parse(content);
+      }
+
+      return {};
+    }
+    catch (error) {
+      Logs.error(`Failed to load vonage requests: ${err.message}`);
+    }
+  }
+
+  static save_vonage_requests(data) {
+    try{
+      fs.writeFileSync(this.vonage_record_path, JSON.stringify(data, null, 2), "utf8");
+    }
+    catch(error) {
+      Logs.error(`Failed to save vonage requests: ${err.message}`);
+    }
   }
 }
 

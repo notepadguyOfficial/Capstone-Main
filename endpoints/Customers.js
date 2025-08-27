@@ -281,12 +281,20 @@ router.get('/user/check/phone', async(req, res) => {
       .where('customer_phone_num', phone)
       .first();
 
-    if (result) {
-      Logs.warn(`Response being sent: Phone number already in use | status: 409 | Code: 1002`);
-      return res.status(409).json({ error: 'Phone number already in use', code: 1002 });
+    // if (result) {
+    //   Logs.warn(`Response being sent: Phone number already in use | status: 409 | Code: 1002`);
+    //   return res.status(409).json({ error: 'Phone number already in use', code: 1002 });
+    // }
+
+    // return res.status(200).json({ success: true, message: "Phone is not used." });
+
+    if(result) {
+      Logs.http(`Response being sent: sucess: true | status: 200 | code: 1002`);
+      return res.status(200).json({ success: true, code: 1002 });
     }
 
-    return res.status(200).json({ success: true, message: "Phone is not used." });
+    Logs.http(`Response being sent: sucess: true | status: 200`);
+    return res.status(200).json({ success: true});
   }
   catch(error) {
     Logs.error(`Response being sent: ${error.message}`);
@@ -320,7 +328,7 @@ router.get('/user/check/username', async(req, res) => {
       return res.status(409).json({ error: 'Username already exists', code: 1001 });
     }
     
-    Logs.http(`Response being sent: Username is available | status: 2000`);
+    Logs.http(`Response being sent: Username is available | status: 200`);
     return res.status(200).json({ message: 'Username is available' });
   }
   catch(error) {

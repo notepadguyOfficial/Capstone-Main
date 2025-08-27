@@ -29,6 +29,12 @@ server.listen(port, async () => {
 
   const publichost = await public();
 
+  Logs.info(`Server Architecture: ${process.arch}`);
+  Logs.info(`Server Platform: ${process.platform}`);
+  Logs.info(`Server Uptime: ${Math.floor(process.uptime())} seconds`);
+  Logs.info(`CPU Cores: ${os.cpus().length}`);
+  Logs.info(`Total Memory: ${(os.totalmem() / (1024 ** 3)).toFixed(2)} GB`);
+  Logs.info(`Free Memory: ${(os.freemem() / (1024 ** 3)).toFixed(2)} GB`);
   Logs.info(`Local Host: ${localhost()}`);
   Logs.info(`Public Host: ${publichost}`);
   Logs.info(`Port: ${port}`);
